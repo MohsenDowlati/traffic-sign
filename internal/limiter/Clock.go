@@ -17,9 +17,9 @@ type FakeClock struct {
 }
 
 func (f *FakeClock) Now() time.Time {
-	return f.t
+	return f.T
 }
 
 func (f *FakeClock) Advance(d time.Duration) {
-	f.t = f.t.Add(d)
+	f.T = f.T.Add(d)
 }

@@ -13,7 +13,7 @@ func (RealClock) Now() time.Time {
 }
 
 type FakeClock struct {
-	t time.Time
+	T time.Time
 }
 
 func (f *FakeClock) Now() time.Time {

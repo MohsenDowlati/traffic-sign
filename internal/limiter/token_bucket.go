@@ -93,7 +93,7 @@ func (tb *TokenBucket) Allow(key string, cost int64) (Result, error) {
 			Remaining:  int64(math.Floor(b.tokens)),
 			RetryAfter: 0,
 			ResetAT:    now.Add(resetDuration),
-			limit:      int64(tb.capacity),
+			Limit:      int64(tb.capacity),
 		}, nil
 	}
 
@@ -109,7 +109,7 @@ func (tb *TokenBucket) Allow(key string, cost int64) (Result, error) {
 		Remaining:  int64(math.Floor(b.tokens)),
 		RetryAfter: retryAfter,
 		ResetAT:    now.Add(resetDuration),
-		limit:      int64(tb.capacity),
+		Limit:      int64(tb.capacity),
 	}, nil
 }
 

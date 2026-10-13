@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	limiterHttp "github.com/MohsenDowlati/traffic-sign/internal/http"
 	"github.com/MohsenDowlati/traffic-sign/internal/limiter"
+	limiterHttp "github.com/MohsenDowlati/traffic-sign/internal/transport/http"
 )
 
 func TestRateLimitMiddleware(t *testing.T) {

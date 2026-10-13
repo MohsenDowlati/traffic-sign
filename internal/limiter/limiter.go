@@ -7,7 +7,7 @@ type Result struct {
 	Remaining  int64
 	RetryAfter time.Duration // 0 if allowed
 	ResetAT    time.Time
-	limit      int64
+	Limit      int64
 }
 
 type Limiter interface {

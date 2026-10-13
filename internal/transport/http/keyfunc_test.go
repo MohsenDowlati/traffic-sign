@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	limiterHttp "github.com/MohsenDowlati/traffic-sign/internal/http"
+	limiterHttp "github.com/MohsenDowlati/traffic-sign/internal/transport/http"
 )
 
 func TestKeyFuncStrategies(t *testing.T) {

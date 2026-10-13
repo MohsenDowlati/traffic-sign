@@ -120,3 +120,51 @@ func TestTokenBucketLimiter(t *testing.T) {
 		}
 	})
 }
+
+func TestCreateAndUseKey(t *testing.T) {
+	t.Run("Create a Key and allow it once", func(t *testing.T) {
+
+		clock := &limiter.FakeClock{T: time.Now()}
+		tb := limiter.NewTokenBucket(10, 1.0, clock)
+
+		ttl := 1 * time.Minute
+		key, err := limiter.GenerateRandomKey(ttl)
+
+		if err != nil {
+			t.Fatalf("couldn't generate a random key : %v", err)
+		}
+
+		res, _ := tb.Allow(key, 1)
+
+		if !res.Allowed {
+			t.Fatalf("expected request to be allowed.")
+		}
+	})
+}
+
+func TestExpiredTTL(t *testing.T) {
+
+	t.Run("Expiration of TTl", func(t *testing.T) {
+		clock := &limiter.FakeClock{T: time.Now()}
+		tb := limiter.NewTokenBucket(10, 1.0, clock)
+
+		ttl := 1 * time.Minute
+		key, err := limiter.GenerateRandomKey(ttl)
+		if err != nil {
+			t.Fatalf("couldn't generate a random key : %v", err)
+		}
+
+		res, _ := tb.Allow(key, 1)
+		if !res.Allowed {
+			t.Fatalf("expected request to be allowed.")
+		}
+
+		clock.Advance(1 * time.Minute)
+
+		res, _ = tb.Allow(key, 1)
+
+		if res.Allowed {
+			t.Fatalf("The key should be expired.")
+		}
+	})
+}

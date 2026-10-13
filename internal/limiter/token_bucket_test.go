@@ -1,9 +1,10 @@
 package limiter_test
 
 import (
-	"github.com/MohsenDowlati/traffic-sign/internal/limiter"
 	"testing"
 	"time"
+
+	"github.com/MohsenDowlati/traffic-sign/internal/limiter"
 )
 
 func TestTokenBucketLimiter(t *testing.T) {
@@ -58,7 +59,6 @@ func TestTokenBucketLimiter(t *testing.T) {
 
 	t.Run("burst capacity: allows bursts higher than refill rate", func(t *testing.T) {
 		clock := &limiter.FakeClock{T: time.Now()}
-
 		tb := limiter.NewTokenBucket(20, 5.0, clock)
 
 		key := "user-burst"
@@ -121,50 +121,68 @@ func TestTokenBucketLimiter(t *testing.T) {
 	})
 }
 
-func TestCreateAndUseKey(t *testing.T) {
-	t.Run("Create a Key and allow it once", func(t *testing.T) {
-
+func TestTTLAndCleanup(t *testing.T) {
+	t.Run("cleanup removes expired keys and decreases map size", func(t *testing.T) {
 		clock := &limiter.FakeClock{T: time.Now()}
-		tb := limiter.NewTokenBucket(10, 1.0, clock)
+		ttl := 5 * time.Minute
+		tb := limiter.NewTokenBucketWithConfig(10, 1.0, clock, 16, ttl)
 
-		ttl := 1 * time.Minute
-		key, err := limiter.GenerateRandomKey(ttl)
+		key1, _ := limiter.GenerateRandomKey()
+		key2, _ := limiter.GenerateRandomKey()
 
-		if err != nil {
-			t.Fatalf("couldn't generate a random key : %v", err)
+		tb.Allow(key1, 1)
+		tb.Allow(key2, 1)
+
+		if count := tb.TotalKeys(); count != 2 {
+			t.Fatalf("expected 2 keys in map, got %d", count)
 		}
 
-		res, _ := tb.Allow(key, 1)
+		clock.Advance(2 * time.Minute)
+		removed := tb.Cleanup(clock.Now())
+		if removed != 0 || tb.TotalKeys() != 2 {
+			t.Fatalf("no keys should be cleaned up yet, removed: %d, remaining: %d", removed, tb.TotalKeys())
+		}
 
-		if !res.Allowed {
-			t.Fatalf("expected request to be allowed.")
+		tb.Allow(key1, 1)
+
+		clock.Advance(4 * time.Minute)
+		removed = tb.Cleanup(clock.Now())
+
+		if removed != 1 {
+			t.Fatalf("expected exactly 1 key removed, got %d", removed)
+		}
+		if count := tb.TotalKeys(); count != 1 {
+			t.Fatalf("expected 1 remaining key, got %d", count)
+		}
+
+		clock.Advance(2 * time.Minute)
+		removed = tb.Cleanup(clock.Now())
+		if removed != 1 || tb.TotalKeys() != 0 {
+			t.Fatalf("expected key1 to be cleaned up, remaining: %d", tb.TotalKeys())
 		}
 	})
-}
 
-func TestExpiredTTL(t *testing.T) {
-
-	t.Run("Expiration of TTl", func(t *testing.T) {
+	t.Run("expired key resets state on lazy access if not cleaned yet", func(t *testing.T) {
 		clock := &limiter.FakeClock{T: time.Now()}
-		tb := limiter.NewTokenBucket(10, 1.0, clock)
+		ttl := 2 * time.Minute
+		tb := limiter.NewTokenBucketWithConfig(5, 0.1, clock, 8, ttl)
 
-		ttl := 1 * time.Minute
-		key, err := limiter.GenerateRandomKey(ttl)
-		if err != nil {
-			t.Fatalf("couldn't generate a random key : %v", err)
+		key := "user-idle"
+
+		for i := 0; i < 5; i++ {
+			tb.Allow(key, 1)
 		}
 
 		res, _ := tb.Allow(key, 1)
-		if !res.Allowed {
-			t.Fatalf("expected request to be allowed.")
+		if res.Allowed {
+			t.Fatal("expected request to be blocked")
 		}
 
-		clock.Advance(1 * time.Minute)
+		clock.Advance(3 * time.Minute)
 
 		res, _ = tb.Allow(key, 1)
-
-		if res.Allowed {
-			t.Fatalf("The key should be expired.")
+		if !res.Allowed {
+			t.Fatal("expected idle key to reset and be allowed")
 		}
 	})
 }

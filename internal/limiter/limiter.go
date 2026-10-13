@@ -2,7 +2,7 @@ package limiter
 
 import "time"
 
-type LimiterResult struct {
+type Result struct {
 	Allowed    bool
 	Remaining  int64
 	RetryAfter time.Duration // 0 if allowed
@@ -11,5 +11,5 @@ type LimiterResult struct {
 }
 
 type Limiter interface {
-	Allow(key string, cost int64) (LimiterResult, error)
+	Allow(key string, cost int64) (Result, error)
 }

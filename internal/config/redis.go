@@ -17,6 +17,24 @@ type RedisConfig struct {
 	WriteTimeout time.Duration
 }
 
+type LimitConfig struct {
+	RateLimitCapacity float64
+	RateLimitRate     float64
+	RateLimitTTL      time.Duration
+	KeyStrategy       string
+	KeyHeaderName     string
+}
+
+func LoadLimitConfig() LimitConfig {
+	return LimitConfig{
+		RateLimitCapacity: getEnvAsFloat("RATE_LIMIT_CAPACITY", 10.0),
+		RateLimitRate:     getEnvAsFloat("RATE_LIMIT_RATE", 2.0),
+		RateLimitTTL:      getEnvAsDuration("RATE_LIMIT_TTL", 10*time.Minute),
+		KeyStrategy:       getEnv("RATE_LIMIT_KEY_BY", "api_key"),
+		KeyHeaderName:     getEnv("RATE_LIMIT_HEADER_NAME", "X-API-Key"),
+	}
+}
+
 func LoadRedisConfig() RedisConfig {
 	return RedisConfig{
 		Host:         getEnv("REDIS_HOST", "127.0.0.1"),
@@ -41,6 +59,15 @@ func getEnvAsInt(key string, defaultVal int) int {
 	if val := os.Getenv(key); val != "" {
 		if intVal, err := strconv.Atoi(val); err == nil {
 			return intVal
+		}
+	}
+	return defaultVal
+}
+
+func getEnvAsFloat(key string, defaultVal float64) float64 {
+	if val := os.Getenv(key); val != "" {
+		if floatVal, err := strconv.ParseFloat(val, 64); err == nil {
+			return floatVal
 		}
 	}
 	return defaultVal
